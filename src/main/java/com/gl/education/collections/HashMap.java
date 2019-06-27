@@ -1,8 +1,5 @@
 package com.gl.education.collections;
 
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  * Custom implementation of {@link java.util.HashMap}.
  *
@@ -20,7 +17,7 @@ public class HashMap<K, V> {
     /**
      * initial count of buckets.
      */
-    private static final int BUCKET_SIZE = 16;
+    private static final int INITIAL_CAPACITY = 16;
 
     /**
      *
@@ -41,7 +38,7 @@ public class HashMap<K, V> {
      * Default initialization. Create one bucket and update threshold value.
      */
     public HashMap() {
-        hashTable = new Entry[BUCKET_SIZE];
+        hashTable = new Entry[INITIAL_CAPACITY];
         threshold = hashTable.length * LOAD_FACTOR;
     }
 
@@ -95,13 +92,15 @@ public class HashMap<K, V> {
         }
 
         // mechanism of add new entry to existed indexes
-        List<Entry<K, V>> entries = hashTable[index].getEntries();
+        Entry<K, V> entry = hashTable[index];
 
-        for (Entry<K, V> entry : entries) {
+        do {
             if (entry.isValueUpdated(newEntry) || entry.isCollisionResolved(newEntry)) {
                 return value;
             }
-        }
+
+            entry = entry.next();
+        } while (entry.hasNext());
 
         return null;
     }
@@ -116,15 +115,24 @@ public class HashMap<K, V> {
         int index = hashCode(key);
 
         if (index < hashTable.length && hashTable[index] != null) {
-            List<Entry<K, V>> entries = hashTable[index].getEntries();
+            Entry<K, V> entry = hashTable[index];
 
-            for (Entry<K, V> entry : entries) {
+            do {
                 if (key.equals(entry.getKey())) {
-                    entries.remove(entry);
+                    V value = entry.getValue();
+
+                    if (entry == hashTable[index]) {
+                        hashTable[index] = entry.next;
+                    } else {
+                        entry = entry.next;
+                    }
+
                     size--;
-                    return entry.getValue();
+                    return value;
                 }
-            }
+
+                entry = entry.next();
+            } while (entry.hasNext());
         }
 
         return null;
@@ -140,13 +148,15 @@ public class HashMap<K, V> {
         int index = hashCode(key);
 
         if (index < capacity() && hashTable[index] != null) {
-            List<Entry<K, V>> entries = hashTable[index].getEntries();
+            Entry<K, V> entry = hashTable[index];
 
-            for (Entry<K, V> entry : entries) {
+            do {
                 if (key.equals(entry.getKey())) {
                     return entry.getValue();
                 }
-            }
+
+                entry = entry.next();
+            } while (entry.hasNext());
         }
 
         return null;
@@ -160,8 +170,7 @@ public class HashMap<K, V> {
      * @return value of added entry.
      */
     private V addEntryToEmptyIndex(int index, Entry<K, V> entry) {
-        hashTable[index] = new Entry<K, V>();
-        hashTable[index].getEntries().add(entry);
+        hashTable[index] = entry;
         size++;
         return entry.getValue();
     }
@@ -174,11 +183,12 @@ public class HashMap<K, V> {
         hashTable = new Entry[oldHashTable.length * 2];
         size = 0;
 
-        for (Entry<K, V> bucket : oldHashTable) {
-            if (bucket != null) {
-                for (Entry<K, V> entry : bucket.getEntries()) {
+        for (Entry<K, V> entry : oldHashTable) {
+            if (entry != null) {
+                do {
                     put(entry.getKey(), entry.getValue());
-                }
+                    entry = entry.next();
+                } while (entry != null && entry.hasNext());
             }
         }
     }
@@ -205,28 +215,24 @@ public class HashMap<K, V> {
     private class Entry<K, V> {
 
         /**
-         * key.
+         * the key.
          */
         private K key;
 
         /**
-         * value.
+         * the value.
          */
         private V value;
 
         /**
-         * list of entries in one bucket.
+         * link to next entry in bucket.
          */
-        private List<Entry<K, V>> entries;
-
-        private Entry() {
-            this(null, null);
-        }
+        private Entry<K, V> next;
 
         private Entry(K key, V value) {
             this.key = key;
             this.value = value;
-            entries = new LinkedList<Entry<K, V>>();
+            next = null;
         }
 
         private K getKey() {
@@ -237,8 +243,12 @@ public class HashMap<K, V> {
             return value;
         }
 
-        private List<Entry<K, V>> getEntries() {
-            return entries;
+        private Entry<K, V> next() {
+            return next;
+        }
+
+        private boolean hasNext() {
+            return next != null;
         }
 
         /**
@@ -264,7 +274,7 @@ public class HashMap<K, V> {
          */
         private boolean isCollisionResolved(Entry<K, V> other) {
             if (hashCode() == other.hashCode() && !key.equals(other.getKey()) && !value.equals(other.getValue())) {
-                entries.add(other);
+                next = other;
                 size++;
                 return true;
             }

@@ -14,7 +14,7 @@ public class HashMapTest {
     private HashMap<Integer, String> hashMap;
 
     @Before
-    public void beforeTest(){
+    public void beforeTest() {
         hashMap = new HashMap<Integer, String>();
     }
 
