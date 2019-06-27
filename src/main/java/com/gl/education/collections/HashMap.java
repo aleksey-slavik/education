@@ -64,6 +64,15 @@ public class HashMap<K, V> {
     }
 
     /**
+     * Returns number of buckets.
+     *
+     * @return number of buckets.
+     */
+    public int capacity() {
+        return hashTable.length;
+    }
+
+    /**
      * Add new element to map.
      *
      * @param key   key of new element
@@ -74,7 +83,7 @@ public class HashMap<K, V> {
         // check capacity of current buckets and if need increase count of buckets
         if (size + 1 >= threshold) {
             threshold *= 2;
-            increaseHashTable();
+            resize();
         }
 
         Entry<K, V> newEntry = new Entry<K, V>(key, value);
@@ -130,7 +139,7 @@ public class HashMap<K, V> {
     public V get(K key) {
         int index = hashCode(key);
 
-        if (index < hashTable.length && hashTable[index] != null) {
+        if (index < capacity() && hashTable[index] != null) {
             List<Entry<K, V>> entries = hashTable[index].getEntries();
 
             for (Entry<K, V> entry : entries) {
@@ -160,7 +169,7 @@ public class HashMap<K, V> {
     /**
      * Method for increasing in twice size of hashTable.
      */
-    private void increaseHashTable() {
+    private void resize() {
         Entry<K, V>[] oldHashTable = hashTable;
         hashTable = new Entry[oldHashTable.length * 2];
         size = 0;
@@ -184,37 +193,7 @@ public class HashMap<K, V> {
     private int hashCode(K key) {
         int hash = 31;
         hash = hash * 17 + key.hashCode();
-        return hash % hashTable.length;
-    }
-
-    @Override
-    public String toString() {
-        if (isEmpty()) {
-            return "[]";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("buckets: ")
-                .append(hashTable.length)
-                .append(", threshold: ")
-                .append(threshold)
-                .append(", size: ")
-                .append(size)
-                .append(": [");
-
-        for (int i = 0; i < hashTable.length; i++) {
-            if (hashTable[i] != null && !hashTable[i].getEntries().isEmpty()) {
-                builder.append("[")
-                        .append(i)
-                        .append(": ")
-                        .append(hashTable[i])
-                        .append("], ");
-            }
-        }
-
-        return builder.delete(builder.length() - 2, builder.length())
-                .append("]")
-                .toString();
+        return hash % capacity();
     }
 
     /**
@@ -291,26 +270,6 @@ public class HashMap<K, V> {
             }
 
             return false;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            builder.append("[");
-
-            for (Entry<K, V> entry : entries) {
-                if (entry != null) {
-                    builder.append("[")
-                            .append(entry.getKey())
-                            .append(", ")
-                            .append(entry.getValue())
-                            .append("], ");
-                }
-            }
-
-            return builder.delete(builder.length() - 2, builder.length())
-                    .append("]")
-                    .toString();
         }
     }
 }
